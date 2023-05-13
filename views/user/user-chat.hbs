@@ -1,0 +1,85 @@
+<div style="width: 500px; height: 300px; border: 1px solid black;margin:  auto; text-align: center; margin-top: 15%;">
+<div style="border:1px solid ;float: left; width: 50%;height:100%;">
+  <h5 >users</h5>
+  {{#each users}}
+  <button class="friend-button" data-id="{{this._id}}"> {{this.email}}</button>
+  {{/each}}
+  
+</div>
+<div style="height:100%;float: right;width: 50%;  border:1px solid"><h5>mesasage</h5>
+<ul id="message-list"></ul>
+    <input id="messages">
+    <form  action="" style="padding-top: 80%;">
+      <input id="m" autocomplete="off" /><button id="send">Send</button>
+    </form>
+</div>
+</div>
+
+</script>
+    <script src="http://localhost:3001/socket.io/socket.io.js"></script>
+    <script>
+    const socket = io('http://localhost:3001');
+
+    
+    console.log('sdf')
+    var friendId;
+
+$(document).ready(function() {
+   
+  $('.friend-button').click(function() {
+    friendId = $(this).data('id');
+    console.log(friendId)
+    // Do something with friend_id, such as sending it to the server or updating the UI
+  });
+});
+
+socket.on('connect', () => {
+  console.log('Connected to server');
+});
+
+// When the user types a message, send it to the server
+document.getElementById('send').addEventListener('click', (event) => {
+  
+  // Prevent the default form submission behavior
+  event.preventDefault();
+
+  // Get the message from the input field
+  const message = document.getElementById('m').value;
+  console.log('function called',message)
+
+  {{!-- sendMessage(message, friendId); --}}
+
+  // Send the message to the specific friend
+  socket.emit('message', message,friendId);
+});
+
+ socket.on('message', (message) => {
+    // Append the received message to the message list
+    const messageList = document.getElementById('message-list');
+    const li = document.createElement('li');
+    li.innerText = message;
+    console.log('message recived',li)
+    messageList.appendChild(li);
+  });
+
+
+// Event listener for receiving a message
+//socket.on('message', message => {
+  // Display the received message on the client-side
+  //const li = document.createElement('li');
+  //li.textContent = message;
+  //console.log('message recived',li)
+  //document.getElementById('messages').appendChild(li);
+//});
+
+socket.on('connect_error', error => {
+  console.log('Connection error:', error);
+});
+
+socket.on('connect_timeout', timeout => {
+  console.log('Connection timeout:', timeout);
+});
+    socket.io.on('debug', console.log.bind(console));
+
+    </script>
+    
