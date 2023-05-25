@@ -25,7 +25,7 @@ var app = express();
   router.get('/',verifyLogin,async(req, res, ) =>
   {
     let users=await userHelpers.friends()
-    console.log(users,"this is users");
+    // console.log(users,"this is users");
       // userHelpers.friends().then((users)=>
       // {
       //   users=users
@@ -41,7 +41,7 @@ var app = express();
 
       
       // console.log("got users",users); 
-      res.render('user/user-chat',{users});
+      res.render('user/user-chat',{users,userId:req.session.user._id});
     
   });
   router.get('/login',(req,res)=>
@@ -79,5 +79,16 @@ var app = express();
       }
     })
   })
+
+  router.get('/chat-history',async(req,res)=>
+  {
+    // let usrid=req.session.user._id
+    // console.log(req.query.userId,"+++",req.session.user._id);
+    const chat=await userHelpers.chat_messages(req.query.userId, req.query.friendId)
+    if (chat && chat.messages) {
+      res.json(chat.messages);
+    } else {
+      res.json([]); // Return an empty array or handle the error in an appropriate way
+    }  })
 
   module.exports = router;

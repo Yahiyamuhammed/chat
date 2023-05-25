@@ -18,6 +18,8 @@
 </script>
     <script src="http://localhost:3001/socket.io/socket.io.js"></script>
     <script>
+
+     var userId='{{userId}}'
     const socket = io('http://localhost:3001');
 
     
@@ -29,7 +31,27 @@ $(document).ready(function() {
   $('.friend-button').click(function() {
     friendId = $(this).data('id');
     console.log(friendId)
-    // Do something with friend_id, such as sending it to the server or updating the UI
+    // send a request to the server to get the chat history for this friend
+    $.ajax({
+        url: '/chat-history',
+        data: { friendId: friendId,userId },
+        success: function(chatHistory) {
+            // display the chat history on the client side
+            const messageList = document.getElementById('message-list');
+            messageList.innerHTML = '';
+            chatHistory.forEach(message => {
+                const li = document.createElement('li');
+                li.innerText = message.content;
+                // add a class to the list item depending on whether the message was sent or received
+                if (message.sender === userId) {
+                    li.classList.add('sent-message');
+                } else {
+                    li.classList.add('received-message');
+                }
+                messageList.appendChild(li);
+            });
+        }
+    });
   });
 });
 
@@ -46,20 +68,29 @@ document.getElementById('send').addEventListener('click', (event) => {
   // Get the message from the input field
   const message = document.getElementById('m').value;
   console.log('function called',message)
-
+   document.getElementById('m').value = ''
   {{!-- sendMessage(message, friendId); --}}
 
   // Send the message to the specific friend
   socket.emit('message', message,friendId);
+  
 });
 
- socket.on('message', (message) => {
+ socket.on('message', (message,senderId) => {
+    // Append the received message to the message list
+   // Check if the received message is from the currently selected user
+  if (senderId === friendId) {
     // Append the received message to the message list
     const messageList = document.getElementById('message-list');
     const li = document.createElement('li');
     li.innerText = message;
-    console.log('message recived',li)
+    li.classList.add('received-message');
     messageList.appendChild(li);
+  } else {
+    // Add a message received indication on the user button
+    const userButton = document.querySelector(`.friend-button[data-id="${senderId}"]`);
+    userButton.classList.add('new-message');
+  }
   });
 
 
@@ -82,4 +113,19 @@ socket.on('connect_timeout', timeout => {
     socket.io.on('debug', console.log.bind(console));
 
     </script>
-    
+    <style>
+      .sent-message {
+    text-align: right;
+}
+
+.received-message {
+    text-align: left;
+}
+
+.new-message {
+  /* Add styles to indicate that a new message has been received */
+  background-color: yellow;
+}
+
+
+    </style>

@@ -102,12 +102,21 @@ module.exports=
 
                 socket.on('message',async (message, friendId) => {
                         console.log('the message is',message,friendId);
+                        
+                        const chatId = [user, friendId].sort().join('-');
+
+                        // update the chat document in the CHAT_COLLECTION collection
+                        await db.get().collection(collection.CHAT_COLLECTION).updateOne(
+                            { _id: chatId },
+                            { $push: { messages: { sender: user, timestamp: new Date(), content: message } } },
+                            { upsert: true }
+                        );
                         const serverID = await db.get().collection(collection.USER_COLLECTION).findOne({ _id:new objectId( friendId) }, { projection: { server_id: 1 } });
                         console.log("this is server id",serverID.server_id);
                         if (serverID) {
                             // const serverID = await db.get().collection('friend').findOne({ user_id: friendId }).select('server_id');
                             // socket.emit('message', message, serverID);
-                            io.to(serverID.server_id).emit('message', message);
+                            io.to(serverID.server_id).emit('message', message,user);
                             }
                         // socket.emit('message', message);
                     })
@@ -130,13 +139,19 @@ module.exports=
         })
         
     },
-    sendMessage(message, friendId) {
-        console.log("emited");
-        io.emit('message', {
-          message,
-          from: user.id,
-          to: friendId,
-        });
-      }
+    chat_messages:(userId,friendId)=>
+    {
+        return new Promise (async(resolve,reject)=>
+        {
+        const chatId = [userId,friendId].sort().join('-');
+        console.log("this is cat id ",chatId);
+        // find the chat document in the CHAT_COLLECTION collection
+        const chat = await db.get().collection(collection.CHAT_COLLECTION).findOne({ _id: chatId });
+        console.log("this is chat",chat);
+        resolve(chat)
+        })
+        
+    }
+    
       
 }

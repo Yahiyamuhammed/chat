@@ -34,9 +34,9 @@ app.use(cookieParser());
 app.use(express.static(path.join(__dirname, 'public')));
 app.use(session({
   secret: 'keyboard cat',
-  resave: true,
+  resave: false,
   saveUninitialized: true,
-  cookie: { secure: false,maxAge: 60000 }
+  cookie: { secure: false,maxAge: 60000,sameSite: 'lax' }
 }))
 
 app.use('/admin', adminRouter);
