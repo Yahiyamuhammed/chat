@@ -24,16 +24,22 @@
 									<span class="online_icon"></span>
 								</div>
 								
-								<div class="user_info">
+								<div class="user_info"  style="border: solid;" onclick="friends('{{this._id}}')">
+									
 									{{!-- {{#each users}} --}}
+									
 									<span>{{this.email}}</span>
 									<p>{{this.email}} is online</p>
-									
+									{{!-- </button> --}}
 									
 									{{!-- <span>Khalid</span>
 									<p>Kalid is online</p> --}}
+									<div class="message_indicator" data-id="{{this._id}}">
+									<span class="notification_button" data-count="0"></span>
+								 </div>
+									
 								</div>
-								
+								 
 							</div>
 						</li>{{/each}}
 						
@@ -44,7 +50,7 @@
 				<div class="col-md-8 col-xl-6 chat">
 					<div class="card">
 						<div class="card-header msg_head">
-							<div class="d-flex bd-highlight">
+							<div class="d-flex bd-highlight " >
 								<div class="img_cont">
 									<img src="https://static.turbosquid.com/Preview/001292/481/WV/_D.jpg" class="rounded-circle user_img">
 									<span class="online_icon"></span>
@@ -68,7 +74,7 @@
 								</ul>
 							</div>
 						</div>
-						<div class="card-body msg_card_body">
+						<div class="card-body msg_card_body" id="message-list">
 							<div class="d-flex justify-content-start mb-4">
 								<div class="img_cont_msg">
 									<img src="https://static.turbosquid.com/Preview/001292/481/WV/_D.jpg" class="rounded-circle user_img_msg">
@@ -87,7 +93,7 @@
 							<img   alt="My Image" class="myImage rounded-circle user_img_msg">
 								</div>
 							</div>
-							<div class="d-flex justify-content-start mb-4">
+							{{!-- <div class="d-flex justify-content-start mb-4">
 								<div class="img_cont_msg">
 									<img src="https://static.turbosquid.com/Preview/001292/481/WV/_D.jpg" class="rounded-circle user_img_msg">
 								</div>
@@ -131,23 +137,245 @@
 									Bye, see you
 									<span class="msg_time">9:12 AM, Today</span>
 								</div>
+							</div> --}}
 							</div>
-						</div>
-						<div class="card-footer">
-							<div class="input-group">
-								<div class="input-group-append">
-									<span class="input-group-text attach_btn"><i class="fas fa-paperclip"></i></span>
-								</div>
-								<textarea name="" class="form-control type_msg" placeholder="Type your message..."></textarea>
-								<div class="input-group-append">
-									<span class="input-group-text send_btn"><i class="fas fa-location-arrow"></i></span>
+							<div class="card-footer">
+								<div class="input-group">
+									<div class="input-group-append">
+										<span class="input-group-text attach_btn"><i class="fas fa-paperclip"></i></span>
+									</div>
+									<textarea name="" rows="1"  class="form-control type_msg" placeholder="Type your message..."></textarea>
+									<div class="input-group-append">
+										<span class="input-group-text send_btn"><i class="fas fa-location-arrow"></i></span>
+									</div>
 								</div>
 							</div>
 						</div>
 					</div>
 				</div>
 			</div>
-		</div>
+		
+</script>
+    <script src="http://localhost:3001/socket.io/socket.io.js"></script>
+    <script>
+
+     var userId='{{userId}}'
+    const socket = io('http://localhost:3001');
+
+    
+    console.log('sdf')
+    var friendId='';
+
+
+   
+ function friends(id) {
+	 // Clear the previous messages
+        $("#message-list").empty();
+    friendId =id
+	 // Reset the notification count for the selected friend
+    const userIndicator = document.querySelector(`.message_indicator[data-id="${friendId}"]`);
+    const notificationButton = userIndicator.querySelector('.notification_button');
+    notificationButton.setAttribute('data-count', '0');
+    notificationButton.innerText = '';
+	userIndicator.style.display = 'none';
+    console.log("id=",friendId)
+    // send a request to the server to get the chat history for this friend
+    $.ajax({
+        url: '/chat-history',
+        data: { friendId: friendId,userId },
+        success: function(chatHistory) {
+            // display the chat history on the client side
+			history(chatHistory);
+
+		}
+			
+    });
+ }
+
+
+	function history(chatHistory)
+	{
+
+		console.log("history called")
+		chatHistory.forEach(message => {
+
+				if (message.sender === userId) {
+				// Create the outer div
+				var $outerDiv = $("<div>", {
+				class: "d-flex justify-content-end mb-4"
+				});
+
+				// Create the message container div
+				var $messageContainerDiv = $("<div>", {
+				class: "msg_cotainer_send"
+				}).text(message.content);
+
+				// Extract the time portion from the timestamp
+				var timestamp = new Date(message.timestamp);
+				var time = timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
+				// Create the message time span and set its content
+				var $messageTimeSpan = $("<span>", {
+				class: "msg_time_send"
+				}).text(time);
+
+				// Append the message time span to the message container div
+				$messageContainerDiv.append($messageTimeSpan);
+
+				// Create the image container div
+				var $imgContainerDiv = $("<div>", {
+				class: "img_cont_msg"
+				});
+
+				// Create the image element
+				var $image = $("<img>", {
+				src: "https://static.turbosquid.com/Preview/001292/481/WV/_D.jpg",
+				alt: "My Image",
+				class: "myImage rounded-circle user_img_msg"
+				});
+
+				// Append the image element to the image container div
+				$imgContainerDiv.append($image);
+
+				// Append the message container div and image container div to the outer div
+				$outerDiv.append($messageContainerDiv);
+				$outerDiv.append($imgContainerDiv);
+
+				// Append the outer div to the body or any other element in the DOM
+				$outerDiv.appendTo("#message-list");
+			}
+			else
+			{
+				// Create the outer div
+				var $outerDiv = $("<div>", {
+				class: "d-flex justify-content-start mb-4"
+				});
+
+				// Create the image container div
+				var $imgContainerDiv = $("<div>", {
+				class: "img_cont_msg"
+				});
+
+				// Create the image element
+				var $image = $("<img>", {
+				src: "https://static.turbosquid.com/Preview/001292/481/WV/_D.jpg",
+				class: "rounded-circle user_img_msg"
+				});
+
+				// Append the image element to the image container div
+				$imgContainerDiv.append($image);
+
+				// Create the message container div
+				var $messageContainerDiv = $("<div>", {
+				class: "msg_cotainer"
+				}).text(message.content);
+
+				// Extract the time portion from the timestamp
+				var timestamp = new Date(message.timestamp);
+				var time = timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
+				// Create the message time span and set its content
+				var $messageTimeSpan = $("<span>", {
+				class: "msg_time"
+				}).text(time);
+
+				// Append the message time span to the message container div
+				$messageContainerDiv.append($messageTimeSpan);
+
+				// Append the image container div and message container div to the outer div
+				
+				$outerDiv.append($imgContainerDiv);
+				$outerDiv.append($messageContainerDiv);
+
+				// Append the outer div to the body or any other element in the DOM
+				$outerDiv.appendTo("#message-list");
+
+			}
+			// Scroll to the bottom of the message container
+			var $messageList = $("#message-list");
+			$messageList.scrollTop($messageList[0].scrollHeight);
+
+
+			
+			
+
+    
+        })
+	}
+
+socket.on('connect', () => {
+  console.log('Connected to server');
+});
+
+// When the user types a message, send it to the server
+
+$(document).ready(function() {
+    $('.send_btn').click(function() {
+      // Perform your desired actions here
+      console.log("Send button clicked");
+
+	  var message = $('.type_msg').val();
+
+	  console.log("Textarea content: " + message);
+
+	  // Send the message to the specific friend
+	  socket.emit('message', message,friendId);
+	  
+	   history([{
+            sender: userId,
+            content: message,
+            timestamp: new Date().toISOString()
+        }]);
+	
+
+	  // Clear the text area
+      $('.type_msg').val('');
+	  
+      // Add your code to handle the click event
+    });
+  });
+
+ socket.on('message', (message,senderId) => {
+    // Append the received message to the message list
+   // Check if the received message is from the currently selected user
+   console.log("message recieved",message)
+  if (senderId === friendId) {
+
+	
+    // Append the received message to the message list
+    history([message])
+  } else {
+
+	 // Increment the notification count for the corresponding user
+        const userIndicator = document.querySelector(`.message_indicator[data-id="${senderId}"]`);
+        const notificationButton = userIndicator.querySelector('.notification_button');
+        const count = parseInt(notificationButton.getAttribute('data-count')) || 0;
+        notificationButton.setAttribute('data-count', count + 1);
+        notificationButton.innerText = count + 1;
+        notificationButton.style.display = 'block'; // Show the notification button
+  }
+  });
+
+
+// Event listener for receiving a message
+//socket.on('message', message => {
+  // Display the received message on the client-side
+  //const li = document.createElement('li');
+  //li.textContent = message;
+  //console.log('message recived',li)
+  //document.getElementById('messages').appendChild(li);
+//});
+
+socket.on('connect_error', error => {
+  console.log('Connection error:', error);
+});
+
+socket.on('connect_timeout', timeout => {
+  console.log('Connection timeout:', timeout);
+});
+    socket.io.on('debug', console.log.bind(console));
+
+    </script>
 		
 	<script>
       const images = document.querySelectorAll('.myImage');
@@ -167,6 +395,8 @@
 	       background: -webkit-linear-gradient(to right, #91EAE4, #86A8E7, #7F7FD5);
 	        background: linear-gradient(to right, #91EAE4, #86A8E7, #7F7FD5);
 		}
+		
+
 
 		.chat{
 			margin-top: auto;
@@ -182,6 +412,10 @@
 			overflow-y: auto;
 			white-space: nowrap;
 		}
+		.new-message {
+  background-color: yellow;
+  /* Add your desired styles for the indicator */
+}
 		.msg_card_body{
 			overflow-y: auto;
 		}
@@ -210,27 +444,34 @@
 			background-color: rgba(0,0,0,0.3) !important;
 			border:0 !important;
 			color:white !important;
-			height: 60px !important;
 			overflow-y: auto;
+			resize: none;
 		}
 			.type_msg:focus{
 		     box-shadow:none !important;
            outline:0px !important;
 		}
+		.type_msg::placeholder {
+    color: white; /* Replace 'red' with the desired color */
+  }
 		.attach_btn{
 	border-radius: 15px 0 0 15px !important;
 	background-color: rgba(0,0,0,0.3) !important;
 			border:0 !important;
 			color: white !important;
 			cursor: pointer;
+			height: 38px;
 		}
+		
 		.send_btn{
 	border-radius: 0 15px 15px 0 !important;
 	background-color: rgba(0,0,0,0.3) !important;
 			border:0 !important;
 			color: white !important;
 			cursor: pointer;
+			height: 38px;
 		}
+		
 		.search_btn{
 			border-radius: 0 15px 15px 0 !important;
 			background-color: rgba(0,0,0,0.3) !important;
@@ -297,6 +538,8 @@
 	font-size: 10px;
 	color: rgba(255,255,255,0.6);
 	}
+	
+
 	.video_cam{
 		margin-left: 50px;
 		margin-top: 5px;
@@ -384,12 +627,42 @@
 		margin-bottom: 15px !important;
 	}
 	}
+	.user_info {
+  position: relative;
+  flex-grow: 1;
+}
+.notification_button {
+  position: absolute;
+  top: 50%;
+  right: 10px;
+  transform: translateY(-50%);
+  display: none;
+  width: 25px;
+  height: 25px;
+  border-radius: 50%;
+  background-color: rgb(0, 255, 136);
+  color: white;
+  text-align: center;
+  font-size: 14px;
+  line-height: 25px;
+}
+
+
+
+
+
 		</style>
 
 <script>
 		$(document).ready(function(){
-$('#action_menu_btn').click(function(){
+$('#action_menu_btn').click(function(e){
+	e.stopPropagation(); // Prevent the click event from propagating to the document body
 	$('.action_menu').toggle();
 });
+
 	});
+	// Add a click event listener to the document body
+    $(document).on('click', function() {
+      $('.action_menu').hide();
+    });
 </script>

@@ -59,16 +59,29 @@ module.exports=
             
         })
     },
-    friends:()=>
+    friends:(loggedInUserId)=>
     {
         return new Promise(async(resolve,reject)=>
         {
-           await db.get().collection(collection.USER_COLLECTION).find().toArray().then((data)=>
-           {
-            // console.log(data);
-            resolve(data);
-           })
-              
+            const users = await db.get().collection(collection.USER_COLLECTION).find().toArray();
+
+            for (const user of users) {
+                const chatId = [loggedInUserId, user._id].sort().join('-');
+                const chat = await db.get().collection(collection.CHAT_COLLECTION).findOne({ _id: chatId });
+
+                if (chat && chat.messages.length > 0) {
+                    const mostRecentMessage = chat.messages[chat.messages.length - 1];
+                    user.timestamp = mostRecentMessage.timestamp;
+                } else {
+                    // Set a default timestamp if the user has no messages
+                    user.timestamp = 0;
+                }
+            }
+
+            // Sort the users based on the most recent message timestamp
+            users.sort((a, b) => b.timestamp - a.timestamp);
+
+            resolve(users);
              
         }).catch((err) => {
             console.error(err);
@@ -105,10 +118,16 @@ module.exports=
                         
                         const chatId = [user, friendId].sort().join('-');
 
+                        const messageObject = {
+                            sender: user,
+                            timestamp: new Date(),
+                            content: message
+                          };
+
                         // update the chat document in the CHAT_COLLECTION collection
                         await db.get().collection(collection.CHAT_COLLECTION).updateOne(
                             { _id: chatId },
-                            { $push: { messages: { sender: user, timestamp: new Date(), content: message } } },
+                            { $push: { messages: messageObject }},
                             { upsert: true }
                         );
                         const serverID = await db.get().collection(collection.USER_COLLECTION).findOne({ _id:new objectId( friendId) }, { projection: { server_id: 1 } });
@@ -116,7 +135,7 @@ module.exports=
                         if (serverID) {
                             // const serverID = await db.get().collection('friend').findOne({ user_id: friendId }).select('server_id');
                             // socket.emit('message', message, serverID);
-                            io.to(serverID.server_id).emit('message', message,user);
+                            io.to(serverID.server_id).emit('message', messageObject,user);
                             }
                         // socket.emit('message', message);
                     })

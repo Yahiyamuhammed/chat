@@ -24,8 +24,10 @@ var app = express();
   /* GET users listing. */
   router.get('/',verifyLogin,async(req, res, ) =>
   {
-    let users=await userHelpers.friends()
-    // console.log(users,"this is users");
+    console.log("this is req. ",req.session.user._id);
+    let userId=req.session.user._id;
+    let users=await userHelpers.friends(userId)
+    console.log(users,"this is users");
       // userHelpers.friends().then((users)=>
       // {
       //   users=users
@@ -41,7 +43,7 @@ var app = express();
 
       
       // console.log("got users",users); 
-      res.render('user/user-chat',{users,userId:req.session.user._id});
+      res.render('user/chat',{users,userId:req.session.user._id});
     
   });
   router.get('/login',(req,res)=>
@@ -92,3 +94,4 @@ var app = express();
     }  })
 
   module.exports = router;
+
